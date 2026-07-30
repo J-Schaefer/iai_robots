@@ -54,10 +54,13 @@ def launch_setup(context, *args, **kwargs):
         package="controller_manager",
         executable="ros2_control_node",
         parameters=[
-            {"robot_description": robot_description_param}, 
+            {"robot_description": robot_description_param,
+             "thread_priority": 80,
+             "lock_memory": True},
             LaunchConfiguration("update_rate_config_file"),
             ParameterFile(controllers_file, allow_substs=True),
         ],
+        prefix=["chrt -f 80"],
         output="screen",
         remappings=[("joint_states", "arms/joint_states")],
     )
@@ -91,7 +94,8 @@ def launch_setup(context, *args, **kwargs):
         name='griplink_node',
         parameters=[
             {"ip": LaunchConfiguration("left_gripper_ip")},
-            {"port": LaunchConfiguration("griplink_network_port")}
+            {"port": LaunchConfiguration("griplink_network_port")},
+            {"joint_name": "left_gripper_finger_joint"}
         ],
     )
 
@@ -102,7 +106,8 @@ def launch_setup(context, *args, **kwargs):
         name='griplink_node',
         parameters=[
             {"ip": LaunchConfiguration("right_gripper_ip")},
-            {"port": LaunchConfiguration("griplink_network_port")}
+            {"port": LaunchConfiguration("griplink_network_port")},
+            {"joint_name": "right_gripper_finger_joint"}
         ],
     )
 
@@ -185,12 +190,12 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{
             'source_list': [
                 '/arms/joint_states',
-                # '/left_gripper/device_states', # DeviceStates are different from JointStates. Can't find JointStates for grippers
-                # '/right_gripper/device_states'
+                '/left_gripper/joint_states',
+                '/right_gripper/joint_states'
             ],
             'rate': 100.0,
         }]
-    )    
+    )
     nodes_to_start = [
         control_node,
         left_dashboard,
@@ -213,10 +218,10 @@ def generate_launch_description():
     declared_arguments = [
         DeclareLaunchArgument("left_ur_type", default_value="ur5"),
         DeclareLaunchArgument("right_ur_type", default_value="ur5"),
-        DeclareLaunchArgument("left_robot_ip", default_value="192.168.102.44"),
-        DeclareLaunchArgument("right_robot_ip", default_value="192.168.102.43"),
-        DeclareLaunchArgument("left_gripper_ip", default_value="192.168.102.42"),
-        DeclareLaunchArgument("right_gripper_ip", default_value="192.168.102.41"),
+        DeclareLaunchArgument("left_robot_ip", default_value="192.168.250.44"),
+        DeclareLaunchArgument("right_robot_ip", default_value="192.168.250.43"),
+        DeclareLaunchArgument("left_gripper_ip", default_value="192.168.250.42"),
+        DeclareLaunchArgument("right_gripper_ip", default_value="192.168.250.41"),
         DeclareLaunchArgument("griplink_network_port", default_value="10001"), 
         DeclareLaunchArgument("controllers_file", default_value=PathJoinSubstitution([FindPackageShare("iai_daisy_description"), "config", "combined_controllers.yaml"])),
         DeclareLaunchArgument("description_launchfile", default_value=PathJoinSubstitution([FindPackageShare("iai_daisy_description"), "launch", "daisy_rsp.launch.py"])),
